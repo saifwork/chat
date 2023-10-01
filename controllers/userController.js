@@ -1,0 +1,213 @@
+const asyncHandler = require("express-async-handler");
+const User = require("../models/userModel");
+const Invite = require("../models/inviteModel");
+const Request = require("../models/requestModel");
+const jwt = require("jsonwebtoken");
+const bcrypt = require("bcrypt");
+const mongoose = require('mongoose');
+
+//@desc Register a User
+//@route  POST /api/users/register
+//@access public
+
+const registerUser = asyncHandler(async (req, res) => { 
+
+    console.log('inside register');
+    const { username, email, password } = req.body;
+    console.log(req.body);
+    if (!username || !email || !password) {
+        res.status(400);
+        throw new Error("All fields are mandatory!");
+    }
+
+    const userAvailable = await User.findOne({ email });
+    if (userAvailable) {
+        res.status(400);
+        throw new Error("User already registered");
+    }
+
+    // Hash Password
+    const hashedPassword = await bcrypt.hash(password.toString(), 10);
+    const user = await User.create({
+        username,
+        email,
+        password: hashedPassword,
+    });
+
+    if (user) {
+       return res.status(200).json({ _id: user._id, email: user.email });
+    }
+    else {
+        res.status(400);
+        throw new Error("User data was not valid");
+    }
+    res.json({ message: "Register Successfully" });
+});
+
+//@desc Login a User
+//@route  POST /api/users/login
+//@access public
+
+const loginUser = asyncHandler(async (req, res) => {
+
+    const { email, password } = req.body;
+    if (!email || !password) {
+        res.statuus(400);
+        throw new Error("All fields are mandatory!");
+    }
+
+    const user = await User.findOne({ email });
+    // compare user password with hashed password;
+    if (user && (await bcrypt.compare(password, user.password))) {
+
+        const accessToken = jwt.sign({
+            user: {
+                id: user.id,
+                username: user.username,
+                email: user.email,
+            },
+        },
+            process.env.ACCESS_TOKEN_SECRET,
+            {
+                expiresIn: "1000m"
+            },
+        );
+        res.status(200).json({ accessToken });
+    }
+    else{
+        res.status(401);
+        throw new Error("Email and Password is not valid");
+    }
+});
+
+//@desc Current User
+//@route  POST /api/users/current
+//@access private
+
+const currentUser = asyncHandler(async (req, res) => {
+    console.log(res.uer)
+    res.json(req.user);
+});
+
+const allUsers = asyncHandler(async (req, res) => {
+    const users = await User.find({}, { password: 0 });
+    res.json(users);
+});
+
+
+//@desc Get InvitedUsers
+//@route  Get /api/users/invitedUsers
+//@access private
+
+const invitedUser = asyncHandler(async (req,res) => {
+
+    const userId = req.user.id;
+    console.log(userId.toString());
+    const userIdObjectId = new mongoose.Types.ObjectId(userId);
+    console.log(userIdObjectId);
+    const userInvites = await Invite.findOne({ user_id: userIdObjectId }).populate("invitedUsers", "name email phone"); // Populate invitedUsers with selected fields
+
+    if (!userInvites) {
+      res.status(404).json({ message: "User invites not found" });
+    } else {
+      res.status(200).json(userInvites.invitedUsers);
+    }
+  
+});
+
+//@desc Get RequestedUsers
+//@route  Get /api/users/requestedUser
+//@access private
+
+const requestedUser = asyncHandler(async (req,res) => {
+
+    const userId = req.user.id;
+    console.log('inside requested users');
+    console.log(userId);
+    const userIdObjectId = new mongoose.Types.ObjectId(userId);
+    const userRequests = await Request.findOne({ user_id: userIdObjectId }).populate("requestedUsers", "name email phone"); // Populate invitedUsers with selected fields
+    
+    if (!userRequests) {
+      res.status(404).json({ message: "User requests not found" });
+    } else {
+      res.status(200).json(userRequests.requestedUsers);
+    }
+});
+
+
+//@desc Send RequestedUsers
+//@route  Get /api/users/sendRequest
+//@access private
+
+const sendRequest = asyncHandler(async (req, res) => {
+    const userId = req.user.id;
+    const otherUserId = req.query.id;
+    console.log('inside sendRequest users');
+    console.log('Inside sendRequest');
+    console.log('userId:', userId);
+    console.log('otherUserId:', otherUserId);
+  
+    try {
+
+      const UserIdObjectId = new mongoose.Types.ObjectId(userId);
+      const otherUserIdObjectId = new mongoose.Types.ObjectId(otherUserId);
+
+      // Add otherUserId to requestedUsers of userId
+      const userRequest = await Request.findOneAndUpdate(
+        { user_id: userId },
+        { $addToSet: { requestedUsers: otherUserIdObjectId } },
+        { upsert: true, new: true }
+      );
+  
+      // Add userId to invitedUsers of otherUserId
+      const userInvite = await Invite.findOneAndUpdate(
+        { user_id: otherUserId },
+        { $addToSet: { invitedUsers: UserIdObjectId } },
+        { upsert: true, new: true }
+      );
+  
+      res.status(200).json({ userRequest, userInvite });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ message: "Server error" });
+    }
+  });
+  
+
+
+//@desc Get RequestedUsers
+//@route  Get /api/users/requestedUser
+//@access private
+
+const withdrawRequest = asyncHandler(async (req, res) => {
+    const userId = req.user.id;
+    const otherUserId = req.query.id;
+    console.log('Inside withdrawRequest');
+  
+    const UserIdObjectId = new mongoose.Types.ObjectId(userId);
+    const otherUserIdObjectId = new mongoose.Types.ObjectId(otherUserId);
+
+    try {
+      // Remove otherUserId from requestedUsers of userId
+      const userRequest = await Request.findOneAndUpdate(
+        { user_id: userId },
+        { $pull: { requestedUsers: otherUserIdObjectId } },
+        { new: true }
+      );
+  
+      // Remove userId from invitedUsers of otherUserId
+      const userInvite = await Invite.findOneAndUpdate(
+        { user_id: otherUserId },
+        { $pull: { invitedUsers: UserIdObjectId } },
+        { new: true }
+      );
+  
+      // Return the updated userRequest and userInvite objects
+      res.status(200).json({ userRequest, userInvite });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ message: "Server error" });
+    }
+  });  
+
+module.exports = { registerUser, loginUser, currentUser, allUsers, invitedUser, requestedUser, sendRequest, withdrawRequest};
