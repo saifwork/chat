@@ -1,9 +1,17 @@
 const mongoose = require("mongoose");
 
 const userSchema = mongoose.Schema({
+    avatar_Id: {
+        type: Number,
+        required: [true, "Avatar Id is required"],
+    },    
     username: {
         type: String,
         required: [true, "Please add the username"],
+    },
+    occupation: {
+        type: String,
+        required: [false]
     },
     email: {
         type: String,

@@ -13,7 +13,7 @@ const mongoose = require('mongoose');
 const registerUser = asyncHandler(async (req, res) => { 
 
     console.log('inside register');
-    const { username, email, password } = req.body;
+    const { username, email, password, occupation} = req.body;
     console.log(req.body);
     if (!username || !email || !password) {
         res.status(400);
@@ -28,8 +28,11 @@ const registerUser = asyncHandler(async (req, res) => {
 
     // Hash Password
     const hashedPassword = await bcrypt.hash(password.toString(), 10);
+    const avatarId = Math.floor(Math.random() * 9) + 1;
     const user = await User.create({
+        avatarId,
         username,
+        occupation,
         email,
         password: hashedPassword,
     });
@@ -62,8 +65,10 @@ const loginUser = asyncHandler(async (req, res) => {
 
         const accessToken = jwt.sign({
             user: {
+                avatar_id: user.avatar_id,
                 id: user.id,
                 username: user.username,
+                occupation: user.occupation,
                 email: user.email,
             },
         },
@@ -85,7 +90,7 @@ const loginUser = asyncHandler(async (req, res) => {
 //@access private
 
 const currentUser = asyncHandler(async (req, res) => {
-    console.log(res.uer)
+    console.log(res.user)
     res.json(req.user);
 });
 

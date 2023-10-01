@@ -93,6 +93,22 @@ const deleteContact = asyncHandler(async (req,res) => {
 });
 
 
+const fetchContact = asyncHandler(async (req,res) => {
+
+  const userId = req.user.id;
+  console.log(userId.toString());
+  const userIdObjectId = new mongoose.Types.ObjectId(userId);
+
+  const allContacts = await Contact.findOne({ user_id: userIdObjectId }).populate("Users", "name email phone"); // Populate invitedUsers with selected fields
+
+  if (!allContacts) {
+    res.status(404).json({ message: "No Contact Available" });
+  } else {
+    res.status(200).json(allContacts.Users);
+  }
+
+});
+
 const addToContact = asyncHandler(async (req, res) => {
     const userId = req.user.id;
     const otherUserId = req.query.id;
@@ -161,4 +177,4 @@ const addToContact = asyncHandler(async (req, res) => {
   
 
 
-module.exports = {getContacts, createContact, getContact, updateContact, deleteContact, addToContact, removeFromContact};
+module.exports = {getContacts, createContact, getContact, updateContact, deleteContact, fetchContact, addToContact, removeFromContact};
