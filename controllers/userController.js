@@ -15,7 +15,7 @@ const registerUser = asyncHandler(async (req, res) => {
   console.log('inside register');
   const { username, email, password, occupation } = req.body;
   console.log(req.body);
-  if (!username || !email || !password) {
+  if (!username || !email || !password || !occupation) {
     res.status(400);
     throw new Error("All fields are mandatory!");
   }
@@ -28,9 +28,11 @@ const registerUser = asyncHandler(async (req, res) => {
 
   // Hash Password
   const hashedPassword = await bcrypt.hash(password.toString(), 10);
-  const avatarId = Math.floor(Math.random() * 9) + 1;
+  console.log(hashedPassword);
+  const avatar_Id = Math.floor(Math.random() * 9) + 1;
+  console.log(avatar_Id);
   const user = await User.create({
-    avatarId,
+    avatar_Id,
     username,
     occupation,
     email,
@@ -38,7 +40,7 @@ const registerUser = asyncHandler(async (req, res) => {
   });
 
   if (user) {
-    return res.status(200).json({ _id: user._id, avatar_id: user.avatar_id, username: user.username, email: user.email, occupation: user.occupation });
+    return res.status(200).json({ _id: user._id, avatar_id: user.avatar_Id, username: user.username, email: user.email, occupation: user.occupation });
   }
   else {
     res.status(400);
