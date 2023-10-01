@@ -10,41 +10,41 @@ const mongoose = require('mongoose');
 //@route  POST /api/users/register
 //@access public
 
-const registerUser = asyncHandler(async (req, res) => { 
+const registerUser = asyncHandler(async (req, res) => {
 
-    console.log('inside register');
-    const { username, email, password, occupation} = req.body;
-    console.log(req.body);
-    if (!username || !email || !password) {
-        res.status(400);
-        throw new Error("All fields are mandatory!");
-    }
+  console.log('inside register');
+  const { username, email, password, occupation } = req.body;
+  console.log(req.body);
+  if (!username || !email || !password) {
+    res.status(400);
+    throw new Error("All fields are mandatory!");
+  }
 
-    const userAvailable = await User.findOne({ email });
-    if (userAvailable) {
-        res.status(400);
-        throw new Error("User already registered");
-    }
+  const userAvailable = await User.findOne({ email });
+  if (userAvailable) {
+    res.status(400);
+    throw new Error("User already registered");
+  }
 
-    // Hash Password
-    const hashedPassword = await bcrypt.hash(password.toString(), 10);
-    const avatarId = Math.floor(Math.random() * 9) + 1;
-    const user = await User.create({
-        avatarId,
-        username,
-        occupation,
-        email,
-        password: hashedPassword,
-    });
+  // Hash Password
+  const hashedPassword = await bcrypt.hash(password.toString(), 10);
+  const avatarId = Math.floor(Math.random() * 9) + 1;
+  const user = await User.create({
+    avatarId,
+    username,
+    occupation,
+    email,
+    password: hashedPassword,
+  });
 
-    if (user) {
-       return res.status(200).json({ _id: user._id, email: user.email });
-    }
-    else {
-        res.status(400);
-        throw new Error("User data was not valid");
-    }
-    res.json({ message: "Register Successfully" });
+  if (user) {
+    return res.status(200).json({ _id: user._id, avatar_id: user.avatar_id, username: user.username, email: user.email, occupation: user.occupation });
+  }
+  else {
+    res.status(400);
+    throw new Error("User data was not valid");
+  }
+  res.json({ message: "Register Successfully" });
 });
 
 //@desc Login a User
@@ -53,36 +53,36 @@ const registerUser = asyncHandler(async (req, res) => {
 
 const loginUser = asyncHandler(async (req, res) => {
 
-    const { email, password } = req.body;
-    if (!email || !password) {
-        res.statuus(400);
-        throw new Error("All fields are mandatory!");
-    }
+  const { email, password } = req.body;
+  if (!email || !password) {
+    res.statuus(400);
+    throw new Error("All fields are mandatory!");
+  }
 
-    const user = await User.findOne({ email });
-    // compare user password with hashed password;
-    if (user && (await bcrypt.compare(password, user.password))) {
+  const user = await User.findOne({ email });
+  // compare user password with hashed password;
+  if (user && (await bcrypt.compare(password, user.password))) {
 
-        const accessToken = jwt.sign({
-            user: {
-                avatar_id: user.avatar_id,
-                id: user.id,
-                username: user.username,
-                occupation: user.occupation,
-                email: user.email,
-            },
-        },
-            process.env.ACCESS_TOKEN_SECRET,
-            {
-                expiresIn: "1000m"
-            },
-        );
-        res.status(200).json({ accessToken });
-    }
-    else{
-        res.status(401);
-        throw new Error("Email and Password is not valid");
-    }
+    const accessToken = jwt.sign({
+      user: {
+        avatar_id: user.avatar_id,
+        id: user.id,
+        username: user.username,
+        occupation: user.occupation,
+        email: user.email,
+      },
+    },
+      process.env.ACCESS_TOKEN_SECRET,
+      {
+        expiresIn: "1000m"
+      },
+    );
+    res.status(200).json({ accessToken });
+  }
+  else {
+    res.status(401);
+    throw new Error("Email and Password is not valid");
+  }
 });
 
 //@desc Current User
@@ -90,13 +90,13 @@ const loginUser = asyncHandler(async (req, res) => {
 //@access private
 
 const currentUser = asyncHandler(async (req, res) => {
-    console.log(res.user)
-    res.json(req.user);
+  console.log(res.user)
+  res.json(req.user);
 });
 
 const allUsers = asyncHandler(async (req, res) => {
-    const users = await User.find({}, { password: 0 });
-    res.json(users);
+  const users = await User.find({}, { password: 0 });
+  res.json(users);
 });
 
 
@@ -104,39 +104,39 @@ const allUsers = asyncHandler(async (req, res) => {
 //@route  Get /api/users/invitedUsers
 //@access private
 
-const invitedUser = asyncHandler(async (req,res) => {
+const invitedUser = asyncHandler(async (req, res) => {
 
-    const userId = req.user.id;
-    console.log(userId.toString());
-    const userIdObjectId = new mongoose.Types.ObjectId(userId);
-    console.log(userIdObjectId);
-    const userInvites = await Invite.findOne({ user_id: userIdObjectId }).populate("invitedUsers", "name email phone"); // Populate invitedUsers with selected fields
+  const userId = req.user.id;
+  console.log(userId.toString());
+  const userIdObjectId = new mongoose.Types.ObjectId(userId);
+  console.log(userIdObjectId);
+  const userInvites = await Invite.findOne({ user_id: userIdObjectId }).populate("invitedUsers", "name email phone"); // Populate invitedUsers with selected fields
 
-    if (!userInvites) {
-      res.status(404).json({ message: "User invites not found" });
-    } else {
-      res.status(200).json(userInvites.invitedUsers);
-    }
-  
+  if (!userInvites) {
+    res.status(404).json({ message: "User invites not found" });
+  } else {
+    res.status(200).json(userInvites.invitedUsers);
+  }
+
 });
 
 //@desc Get RequestedUsers
 //@route  Get /api/users/requestedUser
 //@access private
 
-const requestedUser = asyncHandler(async (req,res) => {
+const requestedUser = asyncHandler(async (req, res) => {
 
-    const userId = req.user.id;
-    console.log('inside requested users');
-    console.log(userId);
-    const userIdObjectId = new mongoose.Types.ObjectId(userId);
-    const userRequests = await Request.findOne({ user_id: userIdObjectId }).populate("requestedUsers", "name email phone"); // Populate invitedUsers with selected fields
-    
-    if (!userRequests) {
-      res.status(404).json({ message: "User requests not found" });
-    } else {
-      res.status(200).json(userRequests.requestedUsers);
-    }
+  const userId = req.user.id;
+  console.log('inside requested users');
+  console.log(userId);
+  const userIdObjectId = new mongoose.Types.ObjectId(userId);
+  const userRequests = await Request.findOne({ user_id: userIdObjectId }).populate("requestedUsers", "name email phone"); // Populate invitedUsers with selected fields
+
+  if (!userRequests) {
+    res.status(404).json({ message: "User requests not found" });
+  } else {
+    res.status(200).json(userRequests.requestedUsers);
+  }
 });
 
 
@@ -145,39 +145,39 @@ const requestedUser = asyncHandler(async (req,res) => {
 //@access private
 
 const sendRequest = asyncHandler(async (req, res) => {
-    const userId = req.user.id;
-    const otherUserId = req.query.id;
-    console.log('inside sendRequest users');
-    console.log('Inside sendRequest');
-    console.log('userId:', userId);
-    console.log('otherUserId:', otherUserId);
-  
-    try {
+  const userId = req.user.id;
+  const otherUserId = req.query.id;
+  console.log('inside sendRequest users');
+  console.log('Inside sendRequest');
+  console.log('userId:', userId);
+  console.log('otherUserId:', otherUserId);
 
-      const UserIdObjectId = new mongoose.Types.ObjectId(userId);
-      const otherUserIdObjectId = new mongoose.Types.ObjectId(otherUserId);
+  try {
 
-      // Add otherUserId to requestedUsers of userId
-      const userRequest = await Request.findOneAndUpdate(
-        { user_id: userId },
-        { $addToSet: { requestedUsers: otherUserIdObjectId } },
-        { upsert: true, new: true }
-      );
-  
-      // Add userId to invitedUsers of otherUserId
-      const userInvite = await Invite.findOneAndUpdate(
-        { user_id: otherUserId },
-        { $addToSet: { invitedUsers: UserIdObjectId } },
-        { upsert: true, new: true }
-      );
-  
-      res.status(200).json({ userRequest, userInvite });
-    } catch (error) {
-      console.error(error);
-      res.status(500).json({ message: "Server error" });
-    }
-  });
-  
+    const UserIdObjectId = new mongoose.Types.ObjectId(userId);
+    const otherUserIdObjectId = new mongoose.Types.ObjectId(otherUserId);
+
+    // Add otherUserId to requestedUsers of userId
+    const userRequest = await Request.findOneAndUpdate(
+      { user_id: userId },
+      { $addToSet: { requestedUsers: otherUserIdObjectId } },
+      { upsert: true, new: true }
+    );
+
+    // Add userId to invitedUsers of otherUserId
+    const userInvite = await Invite.findOneAndUpdate(
+      { user_id: otherUserId },
+      { $addToSet: { invitedUsers: UserIdObjectId } },
+      { upsert: true, new: true }
+    );
+
+    res.status(200).json({ userRequest, userInvite });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
 
 
 //@desc Get RequestedUsers
@@ -185,34 +185,34 @@ const sendRequest = asyncHandler(async (req, res) => {
 //@access private
 
 const withdrawRequest = asyncHandler(async (req, res) => {
-    const userId = req.user.id;
-    const otherUserId = req.query.id;
-    console.log('Inside withdrawRequest');
-  
-    const UserIdObjectId = new mongoose.Types.ObjectId(userId);
-    const otherUserIdObjectId = new mongoose.Types.ObjectId(otherUserId);
+  const userId = req.user.id;
+  const otherUserId = req.query.id;
+  console.log('Inside withdrawRequest');
 
-    try {
-      // Remove otherUserId from requestedUsers of userId
-      const userRequest = await Request.findOneAndUpdate(
-        { user_id: userId },
-        { $pull: { requestedUsers: otherUserIdObjectId } },
-        { new: true }
-      );
-  
-      // Remove userId from invitedUsers of otherUserId
-      const userInvite = await Invite.findOneAndUpdate(
-        { user_id: otherUserId },
-        { $pull: { invitedUsers: UserIdObjectId } },
-        { new: true }
-      );
-  
-      // Return the updated userRequest and userInvite objects
-      res.status(200).json({ userRequest, userInvite });
-    } catch (error) {
-      console.error(error);
-      res.status(500).json({ message: "Server error" });
-    }
-  });  
+  const UserIdObjectId = new mongoose.Types.ObjectId(userId);
+  const otherUserIdObjectId = new mongoose.Types.ObjectId(otherUserId);
 
-module.exports = { registerUser, loginUser, currentUser, allUsers, invitedUser, requestedUser, sendRequest, withdrawRequest};
+  try {
+    // Remove otherUserId from requestedUsers of userId
+    const userRequest = await Request.findOneAndUpdate(
+      { user_id: userId },
+      { $pull: { requestedUsers: otherUserIdObjectId } },
+      { new: true }
+    );
+
+    // Remove userId from invitedUsers of otherUserId
+    const userInvite = await Invite.findOneAndUpdate(
+      { user_id: otherUserId },
+      { $pull: { invitedUsers: UserIdObjectId } },
+      { new: true }
+    );
+
+    // Return the updated userRequest and userInvite objects
+    res.status(200).json({ userRequest, userInvite });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+module.exports = { registerUser, loginUser, currentUser, allUsers, invitedUser, requestedUser, sendRequest, withdrawRequest };
