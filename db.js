@@ -1,6 +1,7 @@
 const mongoose = require('mongoose')
 // const url = 'mongodb://localhost:27017/mycontacts-backend';
-const url = 'mongodb+srv://saifwork30:75yZD7ir7dFzofjv@cluster0.vcdnqdm.mongodb.net/';
+const pwd = process.env.DB_PWD;
+const url = `mongodb+srv://saifwork30:${pwd}@cluster0.vcdnqdm.mongodb.net/`;
 
 module.exports.connectDb = async () => {
     mongoose.connect(url, {
