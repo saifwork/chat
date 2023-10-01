@@ -7,7 +7,7 @@ const initializeSocket = require('./socket');
 const bodyParser = require("body-parser");
 const cors = require('cors');
 const socketIo = require('socket.io');
-const host = process.env.HOST;
+// const host = process.env.HOST;
 const port = process.env.PORT || 4000;
 
 const app = express();
@@ -25,6 +25,6 @@ app.use("/api/contacts", require("./routes/contactRoutes"));
 app.use("/api/users", require("./routes/userRoutes"));
 app.use(errorHandler);
 
-app.listen(port, host,() => {
+app.listen(port,() => {
     console.log(`Server running on port ${port}`);
 });

@@ -9,7 +9,6 @@ function initializeSocket(server) {
 
   console.log('inside Initialize Socket');
   const io = socketIo(server);
-  console.log(io);
 
   io.use((socket, next) => {
     const token = socket.handshake.query.token;
