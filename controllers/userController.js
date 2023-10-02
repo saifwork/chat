@@ -67,7 +67,7 @@ const loginUser = asyncHandler(async (req, res) => {
 
     const accessToken = jwt.sign({
       user: {
-        id: user.id,
+        _id: user._id,
         avatar_Id: user.avatar_Id,
         username: user.username,
         occupation: user.occupation,
@@ -97,9 +97,12 @@ const currentUser = asyncHandler(async (req, res) => {
 });
 
 const allUsers = asyncHandler(async (req, res) => {
-  const users = await User.find({}, { password: 0 });
+
+  const currentUserId = req.user.id; // Adjust this based on your data structure
+  const users = await User.find({ _id: { $ne: currentUserId } }, { password: 0 });
   res.json(users);
 });
+
 
 
 //@desc Get InvitedUsers
