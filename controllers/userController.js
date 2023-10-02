@@ -109,15 +109,17 @@ const allUsers = asyncHandler(async (req, res) => {
 const invitedUser = asyncHandler(async (req, res) => {
 
   const userId = req.user.id;
-  console.log(userId.toString());
+  console.log(userId.toString()); 
   const userIdObjectId = new mongoose.Types.ObjectId(userId);
   console.log(userIdObjectId);
-  const userInvites = await Invite.findOne({ user_id: userIdObjectId }).populate("invitedUsers", "name email phone"); // Populate invitedUsers with selected fields
+  const userInvites = await Request.findOne({ user_id: userIdObjectId }).populate("requestedUsers", "avatar_Id username email occupation"); // Populate invitedUsers with selected fields
+
+  console.log(userInvites);
 
   if (!userInvites) {
     res.status(404).json({ message: "User invites not found" });
   } else {
-    res.status(200).json(userInvites.invitedUsers);
+    res.status(200).json(userInvites.requestedUsers);
   }
 
 });
@@ -132,12 +134,12 @@ const requestedUser = asyncHandler(async (req, res) => {
   console.log('inside requested users');
   console.log(userId);
   const userIdObjectId = new mongoose.Types.ObjectId(userId);
-  const userRequests = await Request.findOne({ user_id: userIdObjectId }).populate("requestedUsers", "name email phone"); // Populate invitedUsers with selected fields
+  const userRequests = await Invite.findOne({ user_id: userIdObjectId }).populate("invitedUsers", "avatar_Id username email occupation"); // Populate invitedUsers with selected fields
 
   if (!userRequests) {
     res.status(404).json({ message: "User requests not found" });
   } else {
-    res.status(200).json(userRequests.requestedUsers);
+    res.status(200).json(userRequests.invitedUsers);
   }
 });
 
