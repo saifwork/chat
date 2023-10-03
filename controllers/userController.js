@@ -112,7 +112,7 @@ const allUsers = asyncHandler(async (req, res) => {
   // Use projection to exclude the 'password' field
   const users = await User.find({ _id: { $ne: userIdObjectId } }, { password: 0 });
 
-  res.status(200).json({ users });
+  res.status(200).json( users );
 });
 
 
