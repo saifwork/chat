@@ -99,7 +99,7 @@ const fetchContact = asyncHandler(async (req,res) => {
   console.log(userId.toString());
   const userIdObjectId = new mongoose.Types.ObjectId(userId);
 
-  const allContacts = await Contact.findOne({ user_id: userIdObjectId }).populate("Users", "name email phone"); // Populate invitedUsers with selected fields
+  const allContacts = await Contact.findOne({ user_id: userIdObjectId }).populate("Users", "avatar_Id username email occupation"); // Populate invitedUsers with selected fields
 
   if (!allContacts) {
     res.status(404).json({ message: "No Contact Available" });
