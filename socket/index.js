@@ -35,21 +35,16 @@ function initializeSocket(server) {
 
       socket.on('message', async (message) => {
         const recipientId = message.recipientId;
+        const date = message.date;
+        const time = message.time;
         const recipientSocket = users[recipientId];
 
-        const currentDate = new Date();
-        const dateFormatOptions = { day: '2-digit', month: '2-digit', year: 'numeric' };
-        const formattedDate = currentDate.toLocaleDateString('en-US', dateFormatOptions);
-        
-        const timeFormatOptions = { hour: '2-digit', minute: '2-digit', hour12: true };
-        const formattedTime = currentDate.toLocaleTimeString('en-US', timeFormatOptions);
-        
         const newMessage = {
           senderId: user._id,
           recipientId: recipientId,
           content: message.msg,
-          date: formattedDate,
-          time: formattedTime,
+          date: date,
+          time: time,
         };
 
         if (recipientSocket) {
