@@ -95,7 +95,7 @@ const deleteContact = asyncHandler(async (req,res) => {
 
 const fetchContact = asyncHandler(async (req,res) => {
 
-  const userId = req.user.id;
+  const userId = req.user._id;
   console.log(userId.toString());
   const userIdObjectId = new mongoose.Types.ObjectId(userId);
 
@@ -110,7 +110,7 @@ const fetchContact = asyncHandler(async (req,res) => {
 });
 
 const addToContact = asyncHandler(async (req, res) => {
-    const userId = req.user.id;
+    const userId = req.user._id;
     const otherUserId = req.query.id;
   
     try {
@@ -146,7 +146,7 @@ const addToContact = asyncHandler(async (req, res) => {
   
 
   const removeFromContact = asyncHandler(async (req, res) => {
-    const userId = req.user.id;
+    const userId = req.user._id;
     const otherUserId = req.query.id;
   
     try {

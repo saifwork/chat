@@ -94,7 +94,7 @@ const registerUser = asyncHandler(async (req, res) => {
 const currentUser = asyncHandler(async (req, res) => {
   console.log(res.user)
   const modifiedUser = {
-    _id: req.user.id,
+    _id: req.user._id,
     avatar_Id: req.user.avatar_Id,
     username: req.user.username,
     email: req.user.email,
@@ -105,7 +105,7 @@ const currentUser = asyncHandler(async (req, res) => {
 
 const allUsers = asyncHandler(async (req, res) => {
   console.log('inside allUsers');
-  const currentUserId = req.user.id;
+  const currentUserId = req.user._id;
   console.log(currentUserId);
   const userIdObjectId = new mongoose.Types.ObjectId(currentUserId);
 
@@ -123,7 +123,7 @@ const allUsers = asyncHandler(async (req, res) => {
 
 const invitedUser = asyncHandler(async (req, res) => {
 
-  const userId = req.user.id;
+  const userId = req.user._id;
   console.log(userId.toString()); 
   const userIdObjectId = new mongoose.Types.ObjectId(userId);
   console.log(userIdObjectId);
@@ -145,7 +145,7 @@ const invitedUser = asyncHandler(async (req, res) => {
 
 const requestedUser = asyncHandler(async (req, res) => {
 
-  const userId = req.user.id;
+  const userId = req.user._id;
   console.log('inside requested users');
   console.log(userId);
   const userIdObjectId = new mongoose.Types.ObjectId(userId);
@@ -164,7 +164,7 @@ const requestedUser = asyncHandler(async (req, res) => {
 //@access private
 
 const sendRequest = asyncHandler(async (req, res) => {
-  const userId = req.user.id;
+  const userId = req.user._id;
   const otherUserId = req.query.id;
   console.log('inside sendRequest users');
   console.log('Inside sendRequest');
@@ -204,7 +204,7 @@ const sendRequest = asyncHandler(async (req, res) => {
 //@access private
 
 const withdrawRequest = asyncHandler(async (req, res) => {
-  const userId = req.user.id;
+  const userId = req.user._id;
   const otherUserId = req.query.id;
   console.log('Inside withdrawRequest');
 
