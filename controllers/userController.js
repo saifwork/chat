@@ -53,39 +53,39 @@ const registerUser = asyncHandler(async (req, res) => {
 //@route  POST /api/users/login
 //@access public
 
-const loginUser = asyncHandler(async (req, res) => {
+  const loginUser = asyncHandler(async (req, res) => {
 
-  const { email, password } = req.body;
-  if (!email || !password) {
-    res.statuus(400);
-    throw new Error("All fields are mandatory!");
-  }
+    const { email, password } = req.body;
+    if (!email || !password) {
+      res.statuus(400);
+      throw new Error("All fields are mandatory!");
+    }
 
-  const user = await User.findOne({ email });
-  // compare user password with hashed password;
-  if (user && (await bcrypt.compare(password, user.password))) {
+    const user = await User.findOne({ email });
+    // compare user password with hashed password;
+    if (user && (await bcrypt.compare(password, user.password))) {
 
-    const accessToken = jwt.sign({
-      user: {
-        _id: user._id,
-        avatar_Id: user.avatar_Id,
-        username: user.username,
-        occupation: user.occupation,
-        email: user.email,
+      const accessToken = jwt.sign({
+        user: {
+          _id: user._id,
+          avatar_Id: user.avatar_Id,
+          username: user.username,
+          occupation: user.occupation,
+          email: user.email,
+        },
       },
-    },
-      process.env.ACCESS_TOKEN_SECRET,
-      {
-        expiresIn: "1000m"
-      },
-    );
-    res.status(200).json({ accessToken });
-  }
-  else {
-    res.status(401);
-    throw new Error("Email and Password is not valid");
-  }
-});
+        process.env.ACCESS_TOKEN_SECRET,
+        {
+          expiresIn: "1000m"
+        },
+      );
+      res.status(200).json({ accessToken });
+    }
+    else {
+      res.status(401);
+      throw new Error("Email and Password is not valid");
+    }
+  });
 
 //@desc Current User
 //@route  POST /api/users/current
@@ -93,14 +93,26 @@ const loginUser = asyncHandler(async (req, res) => {
 
 const currentUser = asyncHandler(async (req, res) => {
   console.log(res.user)
-  res.json(req.user);
+  const modifiedUser = {
+    _id: req.user.id,
+    avatar_Id: req.user.avatar_Id,
+    username: req.user.username,
+    email: req.user.email,
+    occupation: req.user.occupation,
+  };
+  res.json(modifiedUser);
 });
 
 const allUsers = asyncHandler(async (req, res) => {
+  console.log('inside allUsers');
+  const currentUserId = req.user.id;
+  console.log(currentUserId);
+  const userIdObjectId = new mongoose.Types.ObjectId(currentUserId);
 
-  const currentUserId = req.user.id; // Adjust this based on your data structure
-  const users = await User.find({ _id: { $ne: currentUserId } }, { password: 0 });
-  res.json(users);
+  // Use projection to exclude the 'password' field
+  const users = await User.find({ _id: { $ne: userIdObjectId } }, { password: 0 });
+
+  res.status(200).json({ users });
 });
 
 

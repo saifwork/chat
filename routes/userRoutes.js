@@ -6,7 +6,7 @@ const validateToken = require("../middleware/validateTokenHandler");
 router.route("/register").post(registerUser);
 router.route("/login").post(loginUser);
 router.route("/current").get(validateToken,currentUser);
-router.route("/getUsers").get(allUsers);
+router.route("/getUsers").get(validateToken,allUsers);
 
 router.route("/invitedUser").get(validateToken,invitedUser);
 router.route("/requestedUser").get(validateToken,requestedUser);
