@@ -9,22 +9,24 @@ const chatSchema = new mongoose.Schema({
   messages: [
     {
       senderId: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'User',    
+        type: String,   
         required: true,
       },
       recipientId: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'User',
+        type: String,   
         required: true,
       },
       content: {
         type: String,
         required: true,
       },
-      timestamp: {
-        type: Date,
-        default: Date.now,
+      date: {
+        type: String,
+        required: true,
+      },
+      time: {
+        type: String,
+        required: true,
       },
     },
   ],

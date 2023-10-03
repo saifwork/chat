@@ -31,13 +31,30 @@ function initializeSocket(server) {
 
       console.log(users);
 
+
+
       socket.on('message', async (message) => {
         const recipientId = message.recipientId;
         const recipientSocket = users[recipientId];
 
+        const currentDate = new Date();
+        const dateFormatOptions = { day: '2-digit', month: '2-digit', year: 'numeric' };
+        const formattedDate = currentDate.toLocaleDateString('en-US', dateFormatOptions);
+        
+        const timeFormatOptions = { hour: '2-digit', minute: '2-digit', hour12: true };
+        const formattedTime = currentDate.toLocaleTimeString('en-US', timeFormatOptions);
+        
+        const newMessage = {
+          senderId: user._id,
+          recipientId: recipientId,
+          content: message.msg,
+          date: formattedDate,
+          time: formattedTime,
+        };
+
         if (recipientSocket) {
           // Send the message to the recipient
-          recipientSocket.emit('message', message.msg);
+          recipientSocket.emit('message', newMessage);
           console.log(`Message sent from ${user.username} to ${recipientSocket.user.username}`);
         } else {
           console.log(`Recipient with ID ${recipientId} not found`);
@@ -51,12 +68,6 @@ function initializeSocket(server) {
           chat = new Chat({ chatId, messages: [] });
         }
 
-        const newMessage = {
-          senderId: user._id,
-          recipientId: recipientId,
-          content: message.msg,
-          timestamp: new Date(),
-        };
         chat.messages.push(newMessage);
         await chat.save();
 

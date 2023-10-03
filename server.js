@@ -29,8 +29,11 @@ initializeSocket(server);
 app.get("/api/test", (req, res) => {
   res.send("HII BUDDY");
 });
+
 app.use("/api/contacts", require("./routes/contactRoutes"));
 app.use("/api/users", require("./routes/userRoutes"));
+app.use("/api/chat", require("./routes/chatRoutes.js"));
+
 
 // Error Handling Middleware
 app.use(errorHandler);
