@@ -1,6 +1,8 @@
 const asyncHandler = require("express-async-handler");
 const Contact = require("../models/contactModel");
 const Chat = require('../models/chatModel');
+const Invite = require("../models/inviteModel");
+const Request = require("../models/requestModel");
 const mongoose = require('mongoose');
 
 //@desc Get all contacts
@@ -128,6 +130,16 @@ const addToContact = asyncHandler(async (req, res) => {
         { user_id: otherUserId },
         { $addToSet: { Users: userIdObjectId } },
         { new: true, upsert: true }
+      );
+
+      await Request.findOneAndUpdate(
+        { user_id: otherUserId },
+        { $pull: { requestedUsers: userId } }
+      );
+  
+      await Invite.findOneAndUpdate(
+        { user_id: userId },
+        { $pull: { invitedUsers: otherUserId } }
       );
 
       const chat = new Chat({

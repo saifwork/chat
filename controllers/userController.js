@@ -92,7 +92,7 @@ const registerUser = asyncHandler(async (req, res) => {
 //@access private
 
 const currentUser = asyncHandler(async (req, res) => {
-  console.log(res.user)
+  console.log(req.user)
   const modifiedUser = {
     _id: req.user._id,
     avatar_Id: req.user.avatar_Id,

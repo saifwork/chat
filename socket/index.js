@@ -10,74 +10,78 @@ function initializeSocket(server) {
   console.log('inside Initialize Socket');
   const io = socketIo(server);
 
-  io.use((socket, next) => {
+  // Socket.io Connection Handling
+  io.on("connection", (socket) => {
     const token = socket.handshake.query.token;
-    console.log(token);
+    console.log('Received token:', token);
+
+    // Verify the token
     jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, decoded) => {
       if (err) {
-        return next(new Error('Authentication error'));
+        console.log('Authentication error occurred:', err.message);
+        // Handle authentication error
+        return socket.disconnect();
       }
+
       socket.user = decoded;
+      const user = socket.user.user;
 
-      next();
+      users[user._id] = socket.id;
+      console.log(`User connected: ${user.username}`);
+
+      console.log(users);
+
+      socket.on('message', async (message) => {
+        const recipientId = message.recipientId;
+        const recipientSocket = users[recipientId];
+
+        if (recipientSocket) {
+          // Send the message to the recipient
+          recipientSocket.emit('message', message.msg);
+          console.log(`Message sent from ${user.username} to ${recipientSocket.user.username}`);
+        } else {
+          console.log(`Recipient with ID ${recipientId} not found`);
+        }
+
+        // Save chat to Db
+        const chatId = [user._id, recipientId].sort().join('');
+        let chat = await Chat.findOne({ chatId });
+
+        if (!chat) {
+          chat = new Chat({ chatId, messages: [] });
+        }
+
+        const newMessage = {
+          senderId: user._id,
+          recipientId: recipientId,
+          content: message.msg,
+          timestamp: new Date(),
+        };
+        chat.messages.push(newMessage);
+        await chat.save();
+
+      });
+      // socket.on("message", (data) => {
+      //   // Check if socket.user is defined before accessing its properties
+      //   if (socket.user && socket.user.user._id) {
+      //     console.log(`Message received from user ${socket.user.user.username}: ${data}`);
+
+      //     // Broadcast the message to all connected clients
+      //     io.emit("message", { user: socket.user.user.username, message: data });
+      //   } else {
+      //     console.log('User not authenticated');
+      //     // Handle the case where the user is not authenticated
+      //     // You can choose to disconnect the socket or handle it differently
+      //   }
+      // });
+
+      // Handle disconnection
+      socket.on("disconnect", () => {
+        console.log("A user disconnected");
+      });
     });
   });
 
-  io.on('connection', async (socket) => {
-
-    console,log('A user connected');
-    const user = socket.user;
-
-    const email = user.email;
-    const instance = await User.findOne({ email });
-
-    if (!instance) {
-      console.log('User information missing or invalid');
-      socket.disconnect(true);
-      return;
-    }
-
-    // Store the socket for the user
-    users[user.id] = socket.id;
-
-    console.log(`User connected: ${user.username}`);
-
-    socket.on('sendOneToOneMessage', async (message) => {
-      const recipientId = message.recipientId;
-      const recipientSocket = users[recipientId];
-
-      if (recipientSocket) {
-        // Send the message to the recipient
-        recipientSocket.emit('receiveOneToOneMessage', message.msg);
-        console.log(`Message sent from ${user.username} to ${recipientSocket.user.username}`);
-      } else {
-        console.log(`Recipient with ID ${recipientId} not found`);
-      }
-
-    const chatId = [user._id, recipientId].sort().join('');
-    let chat = await Chat.findOne({ chatId });
-
-    if (!chat) {
-      chat = new Chat({ chatId, messages: [] });
-    }
-
-    const newMessage = {
-      senderId: user._id,
-      recipientId: recipientId,
-      content: message.content,
-      timestamp: new Date(),
-    };
-    chat.messages.push(newMessage);
-    await chat.save();
-    });
-
-    socket.on('disconnect', () => {
-      console.log(`User disconnected: ${user.username}`);
-      // Remove the socket from the users object
-      delete users[user.id];
-    });
-
-  });
 }
 
 module.exports = initializeSocket;
