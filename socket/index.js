@@ -26,23 +26,51 @@ function initializeSocket(server) {
       socket.user = decoded;
       const user = socket.user.user;
 
-      users[user._id] = socket.id;
-      console.log(`User connected: ${user.username}`);
+      // users[user._id] = socket.id;
 
-      console.log(users);
+      users[user._id] = {
+        socketId: socket.id,
+        isOnline: true,
+        isTyping: false,
+      };
 
+      const userId = user._id;
 
+      // Emit this as a user connected to the Socket
+      io.emit('online-status', { userId, isOnline: true });
+
+      // Listen for the "typing" event from the client
+      socket.on("typing", (data) => {
+        const recipientId = data.recipientId;
+        const isTyping = data.isTyping;
+
+        // Find the recipient's socket based on their userId
+        const recipientSocket = users[recipientId]?.socketId;
+
+        const information = {
+          userId: userId,
+          isTyping: isTyping,
+        };
+
+        if (recipientSocket) {
+          // Send the message to the recipient
+          recipientSocket.emit('typing', information);
+          console.log(`${user.username} is Typing for ${userId}`);
+        } else {
+          console.log(`Recipient with ID ${recipientId} not found`);
+        }
+      }); 
 
       socket.on('message', async (message) => {
         const recipientId = message.recipientId;
         const date = message.date;
         const time = message.time;
-        const recipientSocket = users[recipientId];
+        const recipientSocket = users[recipientId]?.socketId;
 
         const newMessage = {
-          senderId: user._id,
+          senderId: userId,
           recipientId: recipientId,
-          content: message.msg,
+          content: message.content,
           date: date,
           time: time,
         };
@@ -57,6 +85,8 @@ function initializeSocket(server) {
 
         // Save chat to Db
         const chatId = [user._id, recipientId].sort().join('');
+        console.log(chatId);
+        console.log(newMessage);
         let chat = await Chat.findOne({ chatId });
 
         if (!chat) {
@@ -67,24 +97,15 @@ function initializeSocket(server) {
         await chat.save();
 
       });
-      // socket.on("message", (data) => {
-      //   // Check if socket.user is defined before accessing its properties
-      //   if (socket.user && socket.user.user._id) {
-      //     console.log(`Message received from user ${socket.user.user.username}: ${data}`);
 
-      //     // Broadcast the message to all connected clients
-      //     io.emit("message", { user: socket.user.user.username, message: data });
-      //   } else {
-      //     console.log('User not authenticated');
-      //     // Handle the case where the user is not authenticated
-      //     // You can choose to disconnect the socket or handle it differently
-      //   }
-      // });
-
-      // Handle disconnection
       socket.on("disconnect", () => {
+        delete users[userId];
+
+        io.emit("online-status", { userId, isOnline: false });
+
         console.log("A user disconnected");
       });
+
     });
   });
 
