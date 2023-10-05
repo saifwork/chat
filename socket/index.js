@@ -62,6 +62,7 @@ function initializeSocket(server) {
       }); 
 
       socket.on('message', async (message) => {
+        const chatId = message.chatId;
         const recipientId = message.recipientId;
         const date = message.date;
         const time = message.time;
@@ -84,7 +85,7 @@ function initializeSocket(server) {
         }
 
         // Save chat to Db
-        const chatId = [user._id, recipientId].sort().join('');
+        // const chatId = [user._id, recipientId].sort().join('');
         console.log(chatId);
         console.log(newMessage);
         let chat = await Chat.findOne({ chatId });
@@ -99,8 +100,9 @@ function initializeSocket(server) {
       });
 
       socket.on("disconnect", () => {
+        console.log(users);
         delete users[userId];
-
+        console.log(users);
         io.emit("online-status", { userId, isOnline: false });
 
         console.log("A user disconnected");
