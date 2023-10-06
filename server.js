@@ -39,6 +39,6 @@ app.use("/api/chat", require("./routes/chatRoutes.js"));
 app.use(errorHandler);
 
 // Start the Server
-server.listen(port, host, () => {
+server.listen(port, () => {
   console.log(`Server running on port ${port}`);
 });
