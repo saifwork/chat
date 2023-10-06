@@ -20,7 +20,6 @@ app.use(cors());
 app.use(bodyParser.json());
 
 // Database Connection
-db.connectDb();
 
 // Socket.io Initialization
 initializeSocket(server);
@@ -41,4 +40,5 @@ app.use(errorHandler);
 // Start the Server
 server.listen(port, () => {
   console.log(`Server running on port ${port}`);
+  db.connectDb();
 });
