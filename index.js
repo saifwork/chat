@@ -4,12 +4,14 @@ const app = require("./server");
 const initializeSocket = require("./socket");
 
 const server = http.createServer(app);
+
+const host = process.env.HOST;
 const port = process.env.PORT || 4000;
 
 
 initializeSocket(server);
 
 // Start the Server
-server.listen(port, () => {
+server.listen(port, host, () => {
   console.log(`Server running on port ${port}`);
 });

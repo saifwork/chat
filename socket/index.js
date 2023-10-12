@@ -3,10 +3,11 @@ const jwt = require('jsonwebtoken');
 const User = require("../models/userModel");
 const Chat = require('../models/chatModel');
 
-const users = {};
+
+const socketToRoom = new Map(); // Track Socket Room
+const onlineUsers = new Set(); // Track online users
 
 function initializeSocket(server) {
-
   console.log('inside Initialize Socket');
   const io = socketIo(server);
 
@@ -15,102 +16,96 @@ function initializeSocket(server) {
     const token = socket.handshake.query.token;
     console.log('Received token:', token);
 
-    // Verify the token
     jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, decoded) => {
       if (err) {
         console.log('Authentication error occurred:', err.message);
-        // Handle authentication error
         return socket.disconnect();
       }
 
       socket.user = decoded;
       const user = socket.user.user;
 
-      // users[user._id] = socket.id;
+      // Track the user as online
+      onlineUsers.add(user._id);
 
-      users[user._id] = {
-        socketId: socket.id,
-        isOnline: true,
-        isTyping: false,
-      };
+      // Emit online status to connected clients
+      io.emit('online-status', { userId: user._id, isOnline: true });
 
-      const userId = user._id;
+      // Server-side code
+      socket.on('get-online-status', (data) => {
+        const userIdToCheck = data.userId;
+        // Check if the userIdToCheck is in the onlineUsers Set
+        const isOnline = onlineUsers.has(userIdToCheck);
 
-      // Emit this as a user connected to the Socket
-      io.emit('online-status', { userId, isOnline: true });
+        // Emit the online status back to the requesting client
+        socket.emit('online-status', { userId: userIdToCheck, isOnline: isOnline });
+      });
 
-      // Listen for the "typing" event from the client
-      socket.on("typing", (data) => {
-        const recipientId = data.recipientId;
+
+      socket.on('joinRoom', (roomId) => {
+        socket.join(roomId);
+        // Map the socket ID to the room ID
+        socketToRoom.set(socket.id, roomId);
+      });
+
+      socket.on('typing', (data) => {
+        const roomId = socketToRoom.get(socket.id);
         const isTyping = data.isTyping;
 
-        // Find the recipient's socket based on their userId
-        const recipientSocket = users[recipientId]?.socketId;
-
-        const information = {
-          userId: userId,
+        // Emit the typing status to all sockets in the room
+        io.to(roomId).emit('typing', {
+          userId: user._id,
           isTyping: isTyping,
-        };
-
-        if (recipientSocket) {
-          // Send the message to the recipient
-          recipientSocket.emit('typing', information);
-          console.log(`${user.username} is Typing for ${userId}`);
-        } else {
-          console.log(`Recipient with ID ${recipientId} not found`);
-        }
-      }); 
+        });
+      });
 
       socket.on('message', async (message) => {
-        const chatId = message.chatId;
-        const recipientId = message.recipientId;
-        const date = message.date;
-        const time = message.time;
-        const recipientSocket = users[recipientId]?.socketId;
+        const roomId = socketToRoom.get(socket.id);
 
+        // Emit the message to all sockets in the room
+        io.to(roomId).emit('message', message);
+
+        // Save the message to the database
+        const chatId = roomId; // Use the room ID as the chat ID
         const newMessage = {
-          senderId: userId,
-          recipientId: recipientId,
+          senderId: user._id,
+          recipientId: message.recipientId,
           content: message.content,
-          date: date,
-          time: time,
+          date: message.date,
+          time: message.time,
         };
 
-        if (recipientSocket) {
-          // Send the message to the recipient
-          recipientSocket.emit('message', newMessage);
-          console.log(`Message sent from ${user.username} to ${recipientSocket.user.username}`);
-        } else {
-          console.log(`Recipient with ID ${recipientId} not found`);
-        }
-
-        // Save chat to Db
-        // const chatId = [user._id, recipientId].sort().join('');
-        console.log(chatId);
-        console.log(newMessage);
-        let chat = await Chat.findOne({ chatId });
+        const chat = await Chat.findOne({ chatId });
 
         if (!chat) {
-          chat = new Chat({ chatId, messages: [] });
+          // Create a new chat if it doesn't exist
+          const newChat = new Chat({
+            chatId,
+            messages: [newMessage],
+          });
+          await newChat.save();
+        } else {
+          // Add the message to the existing chat
+          chat.messages.push(newMessage);
+          await chat.save();
         }
-
-        chat.messages.push(newMessage);
-        await chat.save();
-
       });
 
-      socket.on("disconnect", () => {
-        console.log(users);
-        delete users[userId];
-        console.log(users);
-        io.emit("online-status", { userId, isOnline: false });
+      socket.on('disconnect', () => {
+        // Clean up when a socket disconnects
+        const roomId = socketToRoom.get(socket.id);
+        socket.leave(roomId);
+        socketToRoom.delete(socket.id);
 
-        console.log("A user disconnected");
+        // Track the user as offline
+        onlineUsers.delete(user._id);
+
+        // Emit offline status to connected clients
+        io.emit('online-status', { userId: user._id, isOnline: false });
       });
-
     });
   });
-
 }
+
 
 module.exports = initializeSocket;
