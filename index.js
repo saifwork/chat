@@ -12,6 +12,6 @@ const port = process.env.PORT || 4000;
 initializeSocket(server);
 
 // Start the Server
-server.listen(port, host, () => {
+server.listen(port,() => {
   console.log(`Server running on port ${port}`);
 });
